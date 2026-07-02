@@ -7,10 +7,13 @@ import { ScrollController } from "../components/ScrollController";
 import { HeroOverlay } from "../components/HeroOverlay";
 
 const TOTAL_FRAMES = 240;
-const FRAME_PREFIX = "/_MConverter.eu_Creature_wuffi/";
+const FRAME_PREFIX = "/frames_Wuffi.mp4_30fps_png/";
 
 export default function Home() {
-  const { progress, isLoaded, imagesRef } = useImagePreloader(FRAME_PREFIX, TOTAL_FRAMES);
+  const { progress, isLoaded, imagesRef } = useImagePreloader(
+    FRAME_PREFIX,
+    TOTAL_FRAMES,
+  );
 
   // Mutable ref shared between ScrollController (writer) and CanvasRenderer (reader)
   const frameRef = useRef(0);
@@ -26,7 +29,6 @@ export default function Home() {
               This div just provides stacking context for overlays. */}
           <div style={{ position: "relative", width: "100%", height: "100%" }}>
             <CanvasRenderer imagesRef={imagesRef} frameRef={frameRef} />
-
             <HeroOverlay />
           </div>
         </ScrollController>

@@ -13,8 +13,8 @@ export function useImagePreloader(framePrefix, totalFrames) {
       const loadedImages = new Array(totalFrames);
 
       const loadImage = async (index) => {
-        const frameNumber = String(index + 1).padStart(5, "0");
-        const url = `${framePrefix}${frameNumber}.jpg`;
+        const frameNumber = String(index).padStart(6, "0");
+        const url = `${framePrefix}frame_${frameNumber}.png`;
 
         try {
           const response = await fetch(url);

@@ -21,7 +21,7 @@ export function LoadingScreen({ progress, isLoaded }) {
               className="text-4xl font-light text-[#E8F2E9] tracking-widest mb-12"
               style={{ fontFamily: "'Outfit', sans-serif" }}
             >
-              ZUFFI
+              WUFFI
             </motion.h1>
 
             {/* Loading Bar Container */}

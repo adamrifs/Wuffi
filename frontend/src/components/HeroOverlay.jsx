@@ -7,56 +7,105 @@ gsap.registerPlugin(ScrollTrigger);
 
 export function HeroOverlay() {
   const containerRef = useRef(null);
+  const headingRef = useRef(null);
+  const subtitleRef = useRef(null);
+  const rightContentRef = useRef(null);
 
   useEffect(() => {
-    // Fade out and move up the hero text when the user starts scrolling
     const ctx = gsap.context(() => {
-      gsap.to(containerRef.current, {
-        opacity: 0,
-        y: -50,
-        ease: "power2.inOut",
-        scrollTrigger: {
-          trigger: document.body,
-          start: "top top",
-          end: "300px top",
-          scrub: true,
-        },
-      });
+      const h1 = headingRef.current;
+      
+      if (h1) {
+        // Clear any GSAP transforms momentarily to get pure unscaled coordinates
+        gsap.set(h1, { clearProps: "all" });
+        
+        const rect = h1.getBoundingClientRect();
+        const startX = (window.innerWidth / 2) - (rect.left + rect.width / 2);
+        const startY = (window.innerHeight / 2) - (rect.top + rect.height / 2);
+
+        gsap.fromTo(h1, 
+          {
+            x: startX,
+            y: startY,
+            scale: 3.5,
+            transformOrigin: "center center"
+          },
+          {
+            x: 0,
+            y: 0,
+            scale: 1,
+            ease: "power2.inOut",
+            scrollTrigger: {
+              trigger: document.body,
+              start: "top top",
+              end: "500px top",
+              scrub: 1,
+            }
+          }
+        );
+      }
+
+      if (subtitleRef.current && rightContentRef.current) {
+        gsap.from([subtitleRef.current, rightContentRef.current], {
+          opacity: 0,
+          y: 20,
+          ease: "power2.inOut",
+          scrollTrigger: {
+            trigger: document.body,
+            start: "top top",
+            end: "500px top",
+            scrub: 1,
+          }
+        });
+      }
     });
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <div 
-      ref={containerRef}
-      className="absolute inset-0 z-20 flex flex-col items-center justify-start pt-[15vh] pointer-events-none"
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.2, delay: 0.5, ease: "easeOut" }}
-        className="text-center px-4"
+    <>
+      <style>
+        {`
+          @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap');
+        `}
+      </style>
+      <div 
+        ref={containerRef}
+        className="absolute inset-0 z-20 flex items-end pb-[80px] px-[8%] pointer-events-none text-white max-[850px]:pb-[60px]"
+        style={{ fontFamily: "'Fredoka', sans-serif" }}
       >
-        <h1 
-          className="text-5xl md:text-7xl font-bold tracking-tight text-white drop-shadow-xl mb-4"
-          style={{ fontFamily: "'Outfit', sans-serif" }}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.2, delay: 0.5, ease: "easeOut" }}
+          className="w-full grid grid-cols-[1.2fr_0.8fr] items-end max-[850px]:grid-cols-1 max-[850px]:gap-[60px]"
         >
-          Meet Zuffi
-        </h1>
-        <p className="text-lg md:text-xl text-white/90 font-light tracking-wide drop-shadow-md mb-10 max-w-md mx-auto">
-          A tiny forest spirit with a big heart.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pointer-events-auto">
-          <button className="px-8 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-full font-medium tracking-wide transition-all duration-300 hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-            Watch Adventure
-          </button>
-          <button className="px-8 py-3 bg-transparent hover:bg-white/5 border border-transparent hover:border-white/20 text-white rounded-full font-medium tracking-wide transition-all duration-300 hover:scale-105">
-            Learn More
-          </button>
-        </div>
-      </motion.div>
-    </div>
+          {/* Left Side */}
+          <div className="hero-title">
+            <h1 
+              ref={headingRef}
+              className="text-[84px] font-medium tracking-[-3px] mb-[5px] leading-[1] max-[850px]:text-[60px] origin-center w-fit inline-block"
+            >
+              Wuffi
+            </h1>
+            <p ref={subtitleRef} className="text-[32px] text-white/50 font-normal m-0">The cutest explorer in the woods.</p>
+          </div>
+
+          {/* Right Side */}
+          <div ref={rightContentRef} className="flex flex-col items-end text-right max-[850px]:items-start max-[850px]:text-left">
+            <a 
+              href="#" 
+              className="pointer-events-auto py-[14px] px-[32px] border border-white/20 rounded-[100px] bg-white/5 text-white no-underline text-[14px] transition-all duration-300 ease-in-out backdrop-blur-[5px] mb-[30px] hover:bg-white hover:text-black"
+            >
+              Start Exploring
+            </a>
+            <p className="text-[18px] leading-[1.5] text-white/80 max-w-[380px] font-normal m-0">
+              A tiny forest spirit with a big heart, spreading wonder, kindness, and a little magic wherever tiny paws wander.
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    </>
   );
 }
