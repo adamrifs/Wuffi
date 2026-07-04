@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-export function useImagePreloader(framePrefix, totalFrames) {
+export function useImagePreloader(sequences) {
   const [progress, setProgress] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const imagesRef = useRef([]);
@@ -10,18 +10,19 @@ export function useImagePreloader(framePrefix, totalFrames) {
 
     const loadImages = async () => {
       let loadedCount = 0;
-      const loadedImages = new Array(totalFrames);
+      const totalFramesToLoad = sequences.reduce((sum, seq) => sum + seq.count, 0);
+      const allLoadedImages = sequences.map(seq => new Array(seq.count));
 
-      const loadImage = async (index) => {
-        const frameNumber = String(index).padStart(6, "0");
-        const url = `${framePrefix}frame_${frameNumber}.png`;
+      const loadImage = async (seqIndex, frameIndex) => {
+        const frameNumber = String(frameIndex).padStart(6, "0");
+        const url = `${sequences[seqIndex].prefix}frame_${frameNumber}.png`;
 
         try {
           const response = await fetch(url);
           const blob = await response.blob();
           
           if (window.createImageBitmap) {
-            loadedImages[index] = await createImageBitmap(blob);
+            allLoadedImages[seqIndex][frameIndex] = await createImageBitmap(blob);
           } else {
             const img = new Image();
             img.src = URL.createObjectURL(blob);
@@ -29,31 +30,40 @@ export function useImagePreloader(framePrefix, totalFrames) {
               img.onload = () => resolve(img);
               img.onerror = reject;
             });
-            loadedImages[index] = img;
+            allLoadedImages[seqIndex][frameIndex] = img;
           }
         } catch (error) {
-          console.error(`Failed to load image at index ${index}`, error);
+          console.error(`Failed to load image at index ${frameIndex}`, error);
         }
 
         loadedCount++;
         if (!isCancelled) {
-          setProgress(Math.round((loadedCount / totalFrames) * 100));
+          setProgress(Math.round((loadedCount / totalFramesToLoad) * 100));
         }
       };
 
-      // Load images in batches to prevent overwhelming the browser
       const concurrency = 10;
-      for (let i = 0; i < totalFrames; i += concurrency) {
-        if (isCancelled) break;
-        const batch = [];
-        for (let j = 0; j < concurrency && i + j < totalFrames; j++) {
-          batch.push(loadImage(i + j));
+      let activePromises = [];
+
+      for (let seqIndex = 0; seqIndex < sequences.length; seqIndex++) {
+        for (let frameIndex = 0; frameIndex < sequences[seqIndex].count; frameIndex++) {
+          if (isCancelled) break;
+          
+          activePromises.push(loadImage(seqIndex, frameIndex));
+          
+          if (activePromises.length >= concurrency) {
+            await Promise.all(activePromises);
+            activePromises = [];
+          }
         }
-        await Promise.all(batch);
+      }
+      
+      if (activePromises.length > 0) {
+         await Promise.all(activePromises);
       }
 
       if (!isCancelled) {
-        imagesRef.current = loadedImages;
+        imagesRef.current = allLoadedImages;
         setIsLoaded(true);
       }
     };
@@ -63,7 +73,7 @@ export function useImagePreloader(framePrefix, totalFrames) {
     return () => {
       isCancelled = true;
     };
-  }, [framePrefix, totalFrames]);
+  }, [JSON.stringify(sequences)]);
 
   return { progress, isLoaded, imagesRef };
 }

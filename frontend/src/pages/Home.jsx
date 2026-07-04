@@ -5,15 +5,18 @@ import { CanvasRenderer } from "../components/CanvasRenderer";
 import { ScrollController } from "../components/ScrollController";
 
 import { HeroOverlay } from "../components/HeroOverlay";
+import { SectionTwoOverlay } from "../components/SectionTwoOverlay";
+import { WhiteSectionOverlay } from "../components/WhiteSectionOverlay";
 
-const TOTAL_FRAMES = 240;
-const FRAME_PREFIX = "/frames_Wuffi.mp4_30fps_png/";
+const SEQUENCES = [
+  { prefix: "/frames_Wuffi.mp4_30fps_png/", count: 240 },
+  { prefix: "/frames_Wuffi_playing_with_butterfly.mp4_30fps_png/", count: 240 }
+];
+const OVERLAP_FRAMES = 30;
+const TOTAL_FRAMES = SEQUENCES[0].count + SEQUENCES[1].count - OVERLAP_FRAMES;
 
 export default function Home() {
-  const { progress, isLoaded, imagesRef } = useImagePreloader(
-    FRAME_PREFIX,
-    TOTAL_FRAMES,
-  );
+  const { progress, isLoaded, imagesRef } = useImagePreloader(SEQUENCES);
 
   // Mutable ref shared between ScrollController (writer) and CanvasRenderer (reader)
   const frameRef = useRef(0);
@@ -27,9 +30,11 @@ export default function Home() {
         <ScrollController frameRef={frameRef} totalFrames={TOTAL_FRAMES}>
           {/* Canvas is position:fixed so it's always fullscreen.
               This div just provides stacking context for overlays. */}
-          <div style={{ position: "relative", width: "100%", height: "100%" }}>
+          <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
             <CanvasRenderer imagesRef={imagesRef} frameRef={frameRef} />
             <HeroOverlay />
+            <WhiteSectionOverlay />
+            <SectionTwoOverlay />
           </div>
         </ScrollController>
       )}

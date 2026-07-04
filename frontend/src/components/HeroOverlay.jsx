@@ -10,6 +10,7 @@ export function HeroOverlay() {
   const headingRef = useRef(null);
   const subtitleRef = useRef(null);
   const rightContentRef = useRef(null);
+  const middleTextRef = useRef(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -58,6 +59,34 @@ export function HeroOverlay() {
           }
         });
       }
+
+      // Fade out the entire hero overlay shortly after the initial animation
+      gsap.to(containerRef.current, {
+        opacity: 0,
+        scrollTrigger: {
+          start: 800,
+          end: 1500,
+          scrub: 1,
+        }
+      });
+
+      // Reveal and hide the middle text smoothly using a unified timeline
+      if (middleTextRef.current) {
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            start: 1600,
+            end: 3600,
+            scrub: 1,
+          }
+        });
+
+        tl.fromTo(middleTextRef.current,
+          { opacity: 0, y: 60 },
+          { opacity: 1, y: 0, ease: "power2.out", duration: 0.3 } // Fade in (approx 1600-2200)
+        )
+        .to(middleTextRef.current, { opacity: 1, y: 0, duration: 0.4 }) // Hold steady (approx 2200-3000)
+        .to(middleTextRef.current, { opacity: 0, y: -60, ease: "power2.in", duration: 0.3 }); // Fade out (approx 3000-3600)
+      }
     });
 
     return () => ctx.revert();
@@ -67,13 +96,15 @@ export function HeroOverlay() {
     <>
       <style>
         {`
-          @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap');
+          .fredoka-text, .fredoka-text * {
+            font-family: 'Fredoka', sans-serif !important;
+          }
         `}
       </style>
       <div 
         ref={containerRef}
-        className="absolute inset-0 z-20 flex items-end pb-[80px] px-[8%] pointer-events-none text-white max-[850px]:pb-[60px]"
-        style={{ fontFamily: "'Fredoka', sans-serif" }}
+        className="fredoka-text absolute inset-0 z-20 flex items-end pb-[80px] px-[8%] pointer-events-none text-white max-[850px]:pb-[60px]"
       >
         <motion.div
           initial={{ opacity: 0 }}
@@ -105,6 +136,16 @@ export function HeroOverlay() {
             </p>
           </div>
         </motion.div>
+      </div>
+
+      {/* Middle Animated Text */}
+      <div
+        ref={middleTextRef}
+        className="fredoka-text absolute inset-0 z-20 flex items-center justify-center pointer-events-none text-white px-[8%]"
+      >
+        <h2 className="text-[64px] font-medium leading-[1.2] tracking-tight text-center max-w-[900px] drop-shadow-lg max-[850px]:text-[42px]">
+          Deep in the enchanted forest, magic awaits at every turn.
+        </h2>
       </div>
     </>
   );

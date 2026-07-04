@@ -56,21 +56,60 @@ export function CanvasRenderer({ imagesRef, frameRef }) {
       const drawX = (bw - drawWidth) / 2;
       const drawY = (bh - drawHeight) / 2;
 
-      // Solid black fill prevents flash between frames
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, bw, bh);
-
       ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
     };
 
-    const renderLoop = () => {
-      const currentFrame = Math.round(frameRef.current);
+    const OVERLAP_FRAMES = 30;
+    const SEQ1_COUNT = 240;
 
-      if (currentFrame !== lastRenderedFrame) {
-        const images = imagesRef.current;
-        if (images && images[currentFrame]) {
-          drawImageCover(ctx, images[currentFrame], bufferWidth, bufferHeight);
-          lastRenderedFrame = currentFrame;
+    const renderLoop = () => {
+      const currentFrame = frameRef.current;
+      const roundedFrame = Math.round(currentFrame);
+
+      if (roundedFrame !== lastRenderedFrame) {
+        const sequences = imagesRef.current;
+        if (sequences && sequences.length >= 2) {
+          const seq1 = sequences[0];
+          const seq2 = sequences[1];
+
+          let img1 = null;
+          let img2 = null;
+          let alpha2 = 0;
+
+          if (currentFrame < SEQ1_COUNT - OVERLAP_FRAMES) {
+            // Pure seq 1
+            img1 = seq1[Math.min(SEQ1_COUNT - 1, roundedFrame)];
+          } else if (currentFrame < SEQ1_COUNT) {
+            // Crossfade
+            img1 = seq1[Math.min(SEQ1_COUNT - 1, roundedFrame)];
+            
+            // Frame index for seq 2 starts at 0 when currentFrame hits (SEQ1_COUNT - OVERLAP_FRAMES)
+            const seq2Index = roundedFrame - (SEQ1_COUNT - OVERLAP_FRAMES);
+            img2 = seq2[Math.max(0, Math.min(seq2.length - 1, seq2Index))];
+            
+            alpha2 = (currentFrame - (SEQ1_COUNT - OVERLAP_FRAMES)) / OVERLAP_FRAMES;
+          } else {
+            // Pure seq 2
+            const seq2Index = roundedFrame - (SEQ1_COUNT - OVERLAP_FRAMES);
+            img2 = seq2[Math.max(0, Math.min(seq2.length - 1, seq2Index))];
+            alpha2 = 1;
+          }
+
+          // Clear buffer before drawing
+          ctx.fillStyle = "#000";
+          ctx.fillRect(0, 0, bufferWidth, bufferHeight);
+
+          if (img1 && alpha2 < 1) {
+            ctx.globalAlpha = 1;
+            drawImageCover(ctx, img1, bufferWidth, bufferHeight, false); 
+          }
+          if (img2 && alpha2 > 0) {
+            ctx.globalAlpha = alpha2;
+            drawImageCover(ctx, img2, bufferWidth, bufferHeight, false);
+          }
+          
+          ctx.globalAlpha = 1;
+          lastRenderedFrame = roundedFrame;
         }
       }
 
