@@ -5,7 +5,13 @@ import Lenis from "lenis";
 
 gsap.registerPlugin(ScrollTrigger);
 
-export function ScrollController({ frameRef, totalFrames, children }) {
+export function ScrollController({
+  frameRef,
+  scrolledRef,
+  forestProgressRef,
+  totalFrames,
+  children,
+}) {
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -28,23 +34,62 @@ export function ScrollController({ frameRef, totalFrames, children }) {
 
     // --- GSAP ScrollTrigger pin + scrub ---
     // The trigger is the container div. GSAP will pin it at "top top"
-    // and extend the page's scrollable height by `totalFrames * 20` px.
-    // As the user scrolls through that distance, `progress` goes 0→1.
+    // We add 2700px to the scrollable height to pause during the white section
+    // We add 1500px for the ForestExplorer scroll-driven phase
+    const endOfPlaying = totalFrames * 20 + 2700;
+    const forestScrollPx = 1500;
+    const totalScrollPx = endOfPlaying + forestScrollPx;
+
     const ctx = gsap.context(() => {
       ScrollTrigger.create({
         trigger: containerRef.current,
         start: "top top",
-        end: `+=${totalFrames * 20}`, // 240 frames × 20px = 4800px of scroll
-        pin: true,                     // pin the container in place
-        pinSpacing: true,              // let GSAP add the spacer div below
-        anticipatePin: 1,              // prevents jump at pin moment
-        scrub: 0.5,                    // smooth scrub (0 = instant, higher = more lag)
+        end: `+=${totalScrollPx}`,
+        pin: true, // pin the container in place
+        pinSpacing: true, // let GSAP add the spacer div below
+        anticipatePin: 1, // prevents jump at pin moment
+        scrub: 0.5, // smooth scrub (0 = instant, higher = more lag)
         onUpdate: (self) => {
-          // Map scroll progress [0,1] → frame index [0, totalFrames-1]
-          frameRef.current = Math.min(
-            totalFrames - 1,
-            Math.max(0, self.progress * (totalFrames - 1))
-          );
+          const scrolledPx = self.progress * totalScrollPx;
+
+          // Signal CanvasRenderer that the user has started scrolling
+          if (scrolledRef) {
+            scrolledRef.current = scrolledPx > 10;
+          }
+
+          let currentFrame = 0;
+          if (scrolledPx <= 4800) {
+            // 0 - 4800px: play frames 0 to 240 (this completes the crossfade)
+            currentFrame = scrolledPx / 20;
+          } else if (scrolledPx <= 7500) {
+            // 4800 - 7500px: pause at frame 240 (pure sequence 2) while white section scrolls
+            currentFrame = 240;
+          } else {
+            // 7500 - end of playing: resume playing sequence 2
+            currentFrame = 240 + (scrolledPx - 7500) / 20;
+          }
+
+          // Update Forest Progress and yield frame control to ForestExplorer
+          if (forestProgressRef) {
+            if (scrolledPx <= endOfPlaying) {
+              forestProgressRef.current = 0;
+              // We only let ScrollController drive the frameRef if we are not in the forest
+              frameRef.current = Math.min(
+                totalFrames - 1,
+                Math.max(0, currentFrame),
+              );
+            } else {
+              const forestPx = scrolledPx - endOfPlaying;
+              forestProgressRef.current = Math.min(1, forestPx / forestScrollPx);
+              // Do NOT cap frameRef.current here; ForestExplorer handles it natively
+            }
+          } else {
+             // Fallback if ForestExplorer is missing
+             frameRef.current = Math.min(
+                totalFrames - 1,
+                Math.max(0, currentFrame),
+             );
+          }
         },
       });
     }, containerRef);

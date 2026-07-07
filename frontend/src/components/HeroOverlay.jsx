@@ -7,65 +7,19 @@ gsap.registerPlugin(ScrollTrigger);
 
 export function HeroOverlay() {
   const containerRef = useRef(null);
-  const headingRef = useRef(null);
-  const subtitleRef = useRef(null);
-  const rightContentRef = useRef(null);
   const middleTextRef = useRef(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      const h1 = headingRef.current;
-      
-      if (h1) {
-        // Clear any GSAP transforms momentarily to get pure unscaled coordinates
-        gsap.set(h1, { clearProps: "all" });
-        
-        const rect = h1.getBoundingClientRect();
-        const startX = (window.innerWidth / 2) - (rect.left + rect.width / 2);
-        const startY = (window.innerHeight / 2) - (rect.top + rect.height / 2);
-
-        gsap.fromTo(h1, 
-          {
-            x: startX,
-            y: startY,
-            scale: 3.5,
-            transformOrigin: "center center"
-          },
-          {
-            x: 0,
-            y: 0,
-            scale: 1,
-            ease: "power2.inOut",
-            scrollTrigger: {
-              trigger: document.body,
-              start: "top top",
-              end: "500px top",
-              scrub: 1,
-            }
-          }
-        );
-      }
-
-      if (subtitleRef.current && rightContentRef.current) {
-        gsap.from([subtitleRef.current, rightContentRef.current], {
-          opacity: 0,
-          y: 20,
-          ease: "power2.inOut",
-          scrollTrigger: {
-            trigger: document.body,
-            start: "top top",
-            end: "500px top",
-            scrub: 1,
-          }
-        });
-      }
-
-      // Fade out the entire hero overlay shortly after the initial animation
+      // Fade out and softly slide up the entire hero overlay on scroll
       gsap.to(containerRef.current, {
+        y: -120,
         opacity: 0,
+        ease: "none",
         scrollTrigger: {
-          start: 800,
-          end: 1500,
+          trigger: document.body,
+          start: 0,
+          end: 800,
           scrub: 1,
         }
       });
@@ -81,16 +35,38 @@ export function HeroOverlay() {
         });
 
         tl.fromTo(middleTextRef.current,
-          { opacity: 0, y: 60 },
-          { opacity: 1, y: 0, ease: "power2.out", duration: 0.3 } // Fade in (approx 1600-2200)
+          { opacity: 0, y: 60, scale: 0.95 },
+          { opacity: 1, y: 0, scale: 1, ease: "power2.out", duration: 0.3 } 
         )
-        .to(middleTextRef.current, { opacity: 1, y: 0, duration: 0.4 }) // Hold steady (approx 2200-3000)
-        .to(middleTextRef.current, { opacity: 0, y: -60, ease: "power2.in", duration: 0.3 }); // Fade out (approx 3000-3600)
+        .to(middleTextRef.current, { opacity: 1, y: 0, duration: 0.4 }) 
+        .to(middleTextRef.current, { opacity: 0, y: -60, scale: 1.05, ease: "power2.in", duration: 0.3 }); 
       }
     });
 
     return () => ctx.revert();
   }, []);
+
+  // Framer Motion animation variants for the premium entrance
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.2, 
+        delayChildren: 0.4 
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 40, filter: "blur(4px)" },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      filter: "blur(0px)",
+      transition: { duration: 1.2, ease: [0.16, 1, 0.3, 1] } // Apple-like custom ease out
+    }
+  };
 
   return (
     <>
@@ -100,50 +76,58 @@ export function HeroOverlay() {
           .fredoka-text, .fredoka-text * {
             font-family: 'Fredoka', sans-serif !important;
           }
+          .text-shadow-hero {
+            text-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.3);
+          }
+          .text-shadow-sub {
+            text-shadow: 0 2px 15px rgba(0, 0, 0, 0.4);
+          }
         `}
       </style>
       <div 
         ref={containerRef}
-        className="fredoka-text absolute inset-0 z-20 flex items-end pb-[80px] px-[8%] pointer-events-none text-white max-[850px]:pb-[60px]"
+        className="fredoka-text absolute inset-0 z-20 flex flex-col justify-end pb-[8vh] px-[6vw] pointer-events-none text-white"
       >
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.2, delay: 0.5, ease: "easeOut" }}
-          className="w-full grid grid-cols-[1.2fr_0.8fr] items-end max-[850px]:grid-cols-1 max-[850px]:gap-[60px]"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="w-full grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-6 md:gap-12 items-end"
         >
-          {/* Left Side */}
-          <div className="hero-title">
-            <h1 
-              ref={headingRef}
-              className="text-[84px] font-medium tracking-[-3px] mb-[5px] leading-[1] max-[850px]:text-[60px] origin-center w-fit inline-block"
+          {/* Left Side: Title & Subtitle */}
+          <div className="flex flex-col">
+            <motion.h1 
+              variants={itemVariants}
+              className="text-[90px] sm:text-[110px] md:text-[140px] font-semibold tracking-[-0.03em] leading-[0.9] mb-2 text-shadow-hero"
             >
               Wuffi
-            </h1>
-            <p ref={subtitleRef} className="text-[32px] text-white/50 font-normal m-0">The cutest explorer in the woods.</p>
+            </motion.h1>
+            <motion.p 
+              variants={itemVariants}
+              className="text-[22px] sm:text-[26px] md:text-[32px] text-white/90 font-medium m-0 text-shadow-sub"
+            >
+              The cutest explorer in the woods.
+            </motion.p>
           </div>
 
-          {/* Right Side */}
-          <div ref={rightContentRef} className="flex flex-col items-end text-right max-[850px]:items-start max-[850px]:text-left">
-            <a 
-              href="#" 
-              className="pointer-events-auto py-[14px] px-[32px] border border-white/20 rounded-[100px] bg-white/5 text-white no-underline text-[14px] transition-all duration-300 ease-in-out backdrop-blur-[5px] mb-[30px] hover:bg-white hover:text-black"
-            >
-              Start Exploring
-            </a>
-            <p className="text-[18px] leading-[1.5] text-white/80 max-w-[380px] font-normal m-0">
+          {/* Right Side: Description */}
+          <motion.div 
+            variants={itemVariants}
+            className="flex flex-col md:items-end md:text-right"
+          >
+            <p className="text-[16px] sm:text-[18px] md:text-[22px] leading-[1.6] text-white/80 max-w-[420px] font-normal m-0 text-shadow-sub">
               A tiny forest spirit with a big heart, spreading wonder, kindness, and a little magic wherever tiny paws wander.
             </p>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
 
-      {/* Middle Animated Text */}
+      {/* Middle Animated Text (Scroll Triggered) */}
       <div
         ref={middleTextRef}
-        className="fredoka-text absolute inset-0 z-20 flex items-center justify-center pointer-events-none text-white px-[8%]"
+        className="fredoka-text absolute inset-0 z-20 flex items-center justify-center pointer-events-none text-white px-[8vw]"
       >
-        <h2 className="text-[64px] font-medium leading-[1.2] tracking-tight text-center max-w-[900px] drop-shadow-lg max-[850px]:text-[42px]">
+        <h2 className="text-[40px] sm:text-[54px] md:text-[72px] font-medium leading-[1.1] tracking-tight text-center max-w-[1000px] text-shadow-hero">
           Deep in the enchanted forest, magic awaits at every turn.
         </h2>
       </div>

@@ -7,6 +7,8 @@ export function useImagePreloader(sequences) {
 
   useEffect(() => {
     let isCancelled = false;
+    setIsLoaded(false);
+    setProgress(0);
 
     const loadImages = async () => {
       let loadedCount = 0;
@@ -14,8 +16,12 @@ export function useImagePreloader(sequences) {
       const allLoadedImages = sequences.map(seq => new Array(seq.count));
 
       const loadImage = async (seqIndex, frameIndex) => {
-        const frameNumber = String(frameIndex).padStart(6, "0");
-        const url = `${sequences[seqIndex].prefix}frame_${frameNumber}.png`;
+        // Each sequence can supply its own urlBuilder function.
+        // If not provided, fall back to the original 6-digit, 0-indexed format.
+        const seq = sequences[seqIndex];
+        const url = seq.urlBuilder
+          ? seq.urlBuilder(frameIndex)
+          : `${seq.prefix}frame_${String(frameIndex).padStart(6, "0")}.png`;
 
         try {
           const response = await fetch(url);
@@ -73,7 +79,8 @@ export function useImagePreloader(sequences) {
     return () => {
       isCancelled = true;
     };
-  }, [JSON.stringify(sequences)]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(sequences.map(s => ({ prefix: s.prefix, count: s.count })))]);
 
   return { progress, isLoaded, imagesRef };
 }

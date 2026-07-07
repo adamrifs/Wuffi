@@ -6,15 +6,18 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 
 export function SectionTwoOverlay() {
-  const [isVisible, setIsVisible] = useState(false);
+  const [scrollState, setScrollState] = useState("hidden-down"); // "visible", "hidden-up", "hidden-down"
 
   useEffect(() => {
-    // The white section finishes sliding out at 6000px.
-    // We trigger the text animation slightly after that, so it appears cleanly.
+    // The white section finishes sliding out at 7500px.
+    // The wuffi-playing sequence ends at 11700px.
     const trigger = ScrollTrigger.create({
-      start: 6000,
-      onEnter: () => setIsVisible(true),
-      onLeaveBack: () => setIsVisible(false),
+      start: 7500,
+      end: 11000, // Fade out slightly before the sequence ends
+      onEnter: () => setScrollState("visible"),
+      onLeave: () => setScrollState("hidden-up"),
+      onEnterBack: () => setScrollState("visible"),
+      onLeaveBack: () => setScrollState("hidden-down"),
     });
 
     return () => trigger.kill();
@@ -32,10 +35,10 @@ export function SectionTwoOverlay() {
           <motion.h2
             initial={{ y: "120%", opacity: 0 }}
             animate={{ 
-              y: isVisible ? 0 : "120%",
-              opacity: isVisible ? 1 : 0 
+              y: scrollState === "visible" ? 0 : scrollState === "hidden-up" ? "-120%" : "120%",
+              opacity: scrollState === "visible" ? 1 : 0 
             }}
-            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            transition={{ duration: 0.5, delay: scrollState === "visible" ? 0.1 : 0, ease: "easeOut" }}
             className="text-[72px] font-medium text-white mb-[5px] drop-shadow-lg leading-[1] tracking-[-2px] max-[850px]:text-[48px]"
           >
             Playful by Nature
@@ -46,21 +49,22 @@ export function SectionTwoOverlay() {
         <motion.div
           initial={{ width: 0, opacity: 0 }}
           animate={{ 
-            width: isVisible ? "80px" : 0,
-            opacity: isVisible ? 1 : 0 
+            width: scrollState === "visible" ? "80px" : 0,
+            opacity: scrollState === "visible" ? 1 : 0 
           }}
-          transition={{ duration: 1, delay: 0.8, ease: "easeOut" }}
+          transition={{ duration: 0.6, delay: scrollState === "visible" ? 0.3 : 0, ease: "easeOut" }}
           className="h-[4px] bg-[#facc15] mb-[24px] rounded-full"
         />
 
         {/* Body Text */}
         <motion.p
-          initial={{ opacity: 0, filter: "blur(10px)" }}
+          initial={{ opacity: 0, filter: "blur(10px)", y: 0 }}
           animate={{
-            opacity: isVisible ? 1 : 0,
-            filter: isVisible ? "blur(0px)" : "blur(10px)",
+            opacity: scrollState === "visible" ? 1 : 0,
+            filter: scrollState === "visible" ? "blur(0px)" : "blur(10px)",
+            y: scrollState === "visible" ? 0 : scrollState === "hidden-up" ? -20 : 20,
           }}
-          transition={{ duration: 1, delay: 1, ease: "easeOut" }}
+          transition={{ duration: 0.6, delay: scrollState === "visible" ? 0.4 : 0, ease: "easeOut" }}
           className="text-white text-[20px] leading-[1.6] font-normal tracking-wide drop-shadow-md max-w-[450px] max-[850px]:text-[16px]"
         >
           Every flower is a new discovery, every butterfly a new friend. Wuffi
@@ -76,8 +80,8 @@ export function SectionTwoOverlay() {
             key={i}
             initial={{ opacity: 0 }}
             animate={{
-              y: isVisible ? [0, -30, 0] : 0,
-              opacity: isVisible ? [0.1, 0.4, 0.1] : 0,
+              y: scrollState === "visible" ? [0, -30, 0] : 0,
+              opacity: scrollState === "visible" ? [0.1, 0.4, 0.1] : 0,
             }}
             transition={{
               y: { duration: 4 + i, repeat: Infinity, ease: "easeInOut" },
