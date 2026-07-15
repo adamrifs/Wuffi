@@ -1,9 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap");
 
 /* Tailwind v4 — must be the very first line */
 @import "tailwindcss";
 
 @layer base {
+  * {
+    cursor: none !important;
+  }
   /* html/body must NOT have height:100% — GSAP needs the body to grow
      beyond the viewport to accumulate scroll distance for ScrollTrigger pinning */
   html {
@@ -20,7 +23,7 @@
     color: #fff;
     overflow-x: hidden;
     overscroll-behavior-y: none;
-    font-family: 'Outfit', sans-serif;
+    font-family: "Outfit", sans-serif;
   }
 
   /* Root grows to accommodate GSAP spacer */
@@ -43,11 +46,24 @@ html.lenis {
 }
 
 @keyframes slow-zoom {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .animate-slow-zoom {
   animation: slow-zoom 20s ease-in-out infinite;
+}
+
+/* Floating dapple blobs in WhiteSectionOverlay — GPU composited */
+@keyframes dapple-float {
+  0%   { transform: translate3d(0, 0, 0); opacity: 0.2; }
+  50%  { transform: translate3d(15px, -25px, 0); opacity: 0.5; }
+  100% { transform: translate3d(0, 0, 0); opacity: 0.2; }
 }

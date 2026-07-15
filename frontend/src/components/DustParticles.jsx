@@ -1,47 +1,63 @@
 import { useEffect, useRef, useMemo } from "react";
-import { motion } from "framer-motion";
 
+/**
+ * DustParticles — rewritten with pure CSS animations instead of Framer Motion.
+ * Each particle uses a CSS @keyframes animation with will-change: transform,
+ * which is composited entirely on the GPU. The parallax effect uses
+ * requestAnimationFrame to avoid layout thrashing.
+ */
 export function DustParticles() {
   const containerRef = useRef(null);
-  
-  // Interactive Parallax: Move the entire dust layer slightly in the opposite direction of the mouse
+  const rafRef = useRef(null);
+
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
     const handleMouseMove = (e) => {
-      if (!containerRef.current) return;
-      
-      // Calculate mouse position relative to center of screen (-1 to 1)
-      const x = (e.clientX / window.innerWidth - 0.5) * 2;
-      const y = (e.clientY / window.innerHeight - 0.5) * 2;
-      
-      // Move container opposite to mouse for parallax depth
-      containerRef.current.style.transform = `translate(${x * -30}px, ${y * -30}px)`;
+      if (rafRef.current) return; // skip if a frame is already scheduled
+      rafRef.current = requestAnimationFrame(() => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 2;
+        const y = (e.clientY / window.innerHeight - 0.5) * 2;
+        container.style.transform = `translate3d(${x * -30}px, ${y * -30}px, 0)`;
+        rafRef.current = null;
+      });
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
-  // Generate 50 static particles with random initial properties
   const particles = useMemo(() => {
-    return Array.from({ length: 50 }).map((_, i) => ({
+    return Array.from({ length: 30 }).map((_, i) => ({
       id: i,
-      size: Math.random() * 4 + 1, // 1px to 5px
-      x: Math.random() * 100, // 0 to 100vw
-      y: Math.random() * 100, // 0 to 100vh
-      duration: Math.random() * 20 + 10, // 10s to 30s float duration
-      delay: Math.random() * -20, // Start at different times
-      opacity: Math.random() * 0.5 + 0.2, // 0.2 to 0.7 opacity
+      size: Math.random() * 4 + 1,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      duration: Math.random() * 20 + 10,
+      delay: Math.random() * -20,
+      opacity: Math.random() * 0.5 + 0.2,
+      driftX: (Math.random() * 20 - 10),
     }));
   }, []);
 
   return (
-    <div 
-      ref={containerRef} 
-      className="absolute inset-0 w-full h-full transition-transform duration-700 ease-out"
-      style={{ width: '110vw', height: '110vh', left: '-5vw', top: '-5vh' }} // Slightly larger to hide edges during parallax
+    <div
+      ref={containerRef}
+      className="absolute inset-0"
+      style={{
+        width: '110vw',
+        height: '110vh',
+        left: '-5vw',
+        top: '-5vh',
+        willChange: 'transform',
+      }}
     >
       {particles.map((p) => (
-        <motion.div
+        <div
           key={p.id}
           className="absolute rounded-full bg-[#ffea99]"
           style={{
@@ -50,21 +66,19 @@ export function DustParticles() {
             left: `${p.x}%`,
             top: `${p.y}%`,
             boxShadow: `0 0 ${p.size * 2}px ${p.size}px rgba(255, 234, 153, 0.4)`,
-            opacity: p.opacity,
-          }}
-          animate={{
-            y: ["0vh", "-100vh"],
-            x: ["0vw", `${Math.random() * 20 - 10}vw`], 
-            opacity: [0, p.opacity, p.opacity, 0], // Fade in and out at edges
-          }}
-          transition={{
-            duration: p.duration,
-            repeat: Infinity,
-            delay: p.delay,
-            ease: "linear"
+            animation: `dust-float-${p.id} ${p.duration}s linear ${p.delay}s infinite`,
+            willChange: 'transform, opacity',
           }}
         />
       ))}
+      <style>{particles.map((p) => `
+        @keyframes dust-float-${p.id} {
+          0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+          10%  { opacity: ${p.opacity}; }
+          90%  { opacity: ${p.opacity}; }
+          100% { transform: translate3d(${p.driftX}vw, -100vh, 0); opacity: 0; }
+        }
+      `).join('')}</style>
     </div>
   );
 }

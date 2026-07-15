@@ -1,51 +1,15 @@
 import { useMemo } from "react";
-import { motion } from "framer-motion";
 
 // ── God Rays ─────────────────────────────────────────────────────────────────
-function GodRays() {
-  const rays = useMemo(() => {
-    return Array.from({ length: 6 }).map((_, i) => ({
-      id: i,
-      left: 8 + i * 15 + Math.random() * 6,
-      delay: i * 0.9,
-      duration: 3 + Math.random() * 2,
-      rotate: -18 + Math.random() * 36,
-      opacity: 0.04 + Math.random() * 0.06,
-    }));
-  }, []);
+// Commented out by default for perf, uncomment below if wanted
+/*
+function GodRays() { ... }
+*/
 
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {rays.map((r) => (
-        <motion.div
-          key={r.id}
-          className="absolute top-0 h-full"
-          style={{
-            left: `${r.left}%`,
-            width: "8vw",
-            background:
-              "linear-gradient(to bottom, rgba(255,240,160,0.9) 0%, rgba(255,240,160,0) 100%)",
-            transform: `rotate(${r.rotate}deg)`,
-            transformOrigin: "top center",
-            opacity: r.opacity,
-          }}
-          animate={{ opacity: [r.opacity, r.opacity * 2.5, r.opacity] }}
-          transition={{
-            duration: r.duration,
-            repeat: Infinity,
-            delay: r.delay,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ── Floating Dust ─────────────────────────────────────────────────────────────
+// ── Floating Dust — pure CSS ──────────────────────────────────────────────────
 function ForestDust() {
   const particles = useMemo(() => {
-    return Array.from({ length: 60 }).map((_, i) => ({
+    return Array.from({ length: 30 }).map((_, i) => ({
       id: i,
       size: Math.random() * 4 + 1,
       x: Math.random() * 100,
@@ -60,7 +24,7 @@ function ForestDust() {
   return (
     <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
       {particles.map((p) => (
-        <motion.div
+        <div
           key={p.id}
           className="absolute rounded-full"
           style={{
@@ -71,25 +35,24 @@ function ForestDust() {
             background:
               "radial-gradient(circle, rgba(255,235,150,0.9) 0%, rgba(255,220,100,0.4) 70%)",
             boxShadow: `0 0 ${p.size * 2}px ${p.size}px rgba(255,234,153,0.35)`,
-          }}
-          animate={{
-            y: ["0vh", "-100vh"],
-            x: ["0px", `${p.driftX}vw`],
-            opacity: [0, p.opacity, p.opacity, 0],
-          }}
-          transition={{
-            duration: p.duration,
-            repeat: Infinity,
-            delay: p.delay,
-            ease: "linear",
+            animation: `forest-dust-${p.id} ${p.duration}s linear ${p.delay}s infinite`,
+            willChange: 'transform, opacity',
           }}
         />
       ))}
+      <style>{particles.map((p) => `
+        @keyframes forest-dust-${p.id} {
+          0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+          10%  { opacity: ${p.opacity}; }
+          90%  { opacity: ${p.opacity}; }
+          100% { transform: translate3d(${p.driftX}vw, -100vh, 0); opacity: 0; }
+        }
+      `).join('')}</style>
     </div>
   );
 }
 
-// ── Drifting Leaves ───────────────────────────────────────────────────────────
+// ── Drifting Leaves — pure CSS ───────────────────────────────────────────────
 const LEAF_COLORS = ["#a8d47a", "#7cbf52", "#c8e89e", "#e4b84a", "#d4a832"];
 
 const LeafSVG = ({ color }) => (
@@ -101,7 +64,7 @@ const LeafSVG = ({ color }) => (
 
 function DriftingLeaves() {
   const leaves = useMemo(() => {
-    return Array.from({ length: 12 }).map((_, i) => ({
+    return Array.from({ length: 8 }).map((_, i) => ({
       id: i,
       size: Math.random() * 18 + 12,
       startX: Math.random() * 110 - 5,
@@ -116,49 +79,52 @@ function DriftingLeaves() {
   return (
     <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
       {leaves.map((l) => (
-        <motion.div
+        <div
           key={l.id}
           className="absolute"
-          style={{ width: l.size, height: l.size, left: `${l.startX}%`, top: 0 }}
-          animate={{
-            y: ["0vh", "110vh"],
-            x: ["0px", `${l.endX}vw`],
-            rotate: [0, l.rotateEnd],
-            opacity: [0, 0.9, 0.9, 0],
-          }}
-          transition={{
-            duration: l.duration,
-            repeat: Infinity,
-            delay: l.delay,
-            ease: "easeIn",
+          style={{
+            width: l.size,
+            height: l.size,
+            left: `${l.startX}%`,
+            top: 0,
+            animation: `leaf-drift-${l.id} ${l.duration}s ease-in ${l.delay}s infinite`,
+            willChange: 'transform, opacity',
           }}
         >
           <LeafSVG color={l.color} />
-        </motion.div>
+        </div>
       ))}
+      <style>{leaves.map((l) => `
+        @keyframes leaf-drift-${l.id} {
+          0%   { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
+          10%  { opacity: 0.9; }
+          90%  { opacity: 0.9; }
+          100% { transform: translate3d(${l.endX}vw, 110vh, 0) rotate(${l.rotateEnd}deg); opacity: 0; }
+        }
+      `).join('')}</style>
     </div>
   );
 }
 
-// ── Fireflies ─────────────────────────────────────────────────────────────────
+// ── Fireflies — pure CSS ─────────────────────────────────────────────────────
 function Fireflies() {
   const flies = useMemo(() => {
-    return Array.from({ length: 15 }).map((_, i) => ({
+    return Array.from({ length: 10 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 80 + 10,
       size: Math.random() * 5 + 3,
       duration: Math.random() * 3 + 2,
       delay: Math.random() * -5,
-      driftX: (Math.random() - 0.5) * 8,
-      driftY: (Math.random() - 0.5) * 8,
+      driftX: (Math.random() - 0.5) * 80,
+      driftY: (Math.random() - 0.5) * 80,
     }));
   }, []);
 
   return (
     <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
       {flies.map((f) => (
-        <motion.div
+        <div
           key={f.id}
           className="absolute rounded-full"
           style={{
@@ -169,21 +135,20 @@ function Fireflies() {
             background:
               "radial-gradient(circle, #fff9c4 0%, #ffd700 60%, transparent 100%)",
             boxShadow: `0 0 ${f.size * 3}px ${f.size * 2}px rgba(255,250,150,0.6)`,
-          }}
-          animate={{
-            x: [0, f.driftX * 10, 0],
-            y: [0, f.driftY * 10, 0],
-            opacity: [0, 1, 0.3, 1, 0],
-            scale: [0.8, 1.4, 0.8],
-          }}
-          transition={{
-            duration: f.duration,
-            repeat: Infinity,
-            delay: f.delay,
-            ease: "easeInOut",
+            animation: `firefly-${f.id} ${f.duration}s ease-in-out ${f.delay}s infinite`,
+            willChange: 'transform, opacity',
           }}
         />
       ))}
+      <style>{flies.map((f) => `
+        @keyframes firefly-${f.id} {
+          0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+          15%  { opacity: 1; }
+          50%  { transform: translate3d(${f.driftX}px, ${f.driftY}px, 0); opacity: 0.3; scale: 1.4; }
+          85%  { opacity: 1; }
+          100% { transform: translate3d(0, 0, 0); opacity: 0; scale: 0.8; }
+        }
+      `).join('')}</style>
     </div>
   );
 }
@@ -194,7 +159,6 @@ export function ForestParticles({ className = "" }) {
     <div
       className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
     >
-      {/* <GodRays /> */}
       <ForestDust />
       <DriftingLeaves />
       <Fireflies />

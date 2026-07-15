@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="29" height="29" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <radialGradient id="nutGradient" cx="38%" cy="32%" r="65%" fx="35%" fy="25%">
+      <stop offset="0%" stop-color="#ffb05c" />
+      <stop offset="25%" stop-color="#e2872e" />
+      <stop offset="70%" stop-color="#b4570d" />
+      <stop offset="100%" stop-color="#753000" />
+    </radialGradient>
+    <linearGradient id="scaleDarkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6e3c23" />
+      <stop offset="100%" stop-color="#301509" />
+    </linearGradient>
+    <linearGradient id="scaleMedGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5d321d" />
+      <stop offset="100%" stop-color="#32170c" />
+    </linearGradient>
+    <radialGradient id="scaleLightGrad" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#824c30" />
+      <stop offset="70%" stop-color="#502915" />
+      <stop offset="100%" stop-color="#35190c" />
+    </radialGradient>
+    <linearGradient id="glossGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="stemGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7a462b" />
+      <stop offset="35%" stop-color="#5b311b" />
+      <stop offset="100%" stop-color="#2c1206" />
+    </linearGradient>
+    <radialGradient id="stemHoleGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a0802" />
+      <stop offset="85%" stop-color="#3d1d0f" />
+      <stop offset="100%" stop-color="#502715" />
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+  
+  <g transform="rotate(-15 256 256)" filter="">
+    <g id="stem">
+      <path d="M 235 125 C 235 125, 242 70, 252 50 C 255 44, 275 48, 272 56 C 265 72, 258 125, 258 125 Z" fill="url(#stemGrad)" />
+      <ellipse cx="262" cy="53" rx="10" ry="5" fill="#7a462b" transform="rotate(-15 262 53)" />
+      <ellipse cx="262" cy="53" rx="7" ry="3" fill="url(#stemHoleGrad)" transform="rotate(-15 262 53)" />
+    </g>
+    <path id="nut-body" d="M 125 240 C 120 310, 160 410, 240 445 C 246 448, 254 450, 256 452 C 258 450, 266 448, 272 445 C 352 410, 392 310, 387 240 C 385 220, 127 220, 125 240 Z" fill="url(#nutGradient)" />
+    <path d="M 124 235 C 130 260, 382 260, 388 235 C 388 235, 300 280, 256 280 C 212 280, 124 235, 124 235 Z" fill="#1d0d04" opacity="0.45" filter="blur(4px)" />
+    <g id="cap-row-4">
+      <path d="M 220 145 Q 235 125 250 145 Q 235 160 220 145 Z" fill="url(#scaleLightGrad)" />
+      <path d="M 222 143 Q 235 127 248 143 Q 235 152 222 143 Z" fill="url(#glossGrad)" />
+      <path d="M 245 142 Q 260 122 275 142 Q 260 157 245 142 Z" fill="url(#scaleLightGrad)" />
+      <path d="M 247 140 Q 260 124 273 140 Q 260 149 247 140 Z" fill="url(#glossGrad)" />
+      <path d="M 200 155 Q 215 135 230 155 Q 215 170 200 155 Z" fill="url(#scaleLightGrad)" />
+    </g>
+    <g id="cap-row-3" filter="url(#softShadow)">
+      <path d="M 175 175 Q 195 150 215 175 Q 195 195 175 175 Z" fill="url(#scaleMedGrad)" />
+      <path d="M 177 173 Q 195 153 213 173 Q 195 186 177 173 Z" fill="url(#glossGrad)" />
+      <path d="M 205 178 Q 230 148 255 178 Q 230 200 205 178 Z" fill="url(#scaleLightGrad)" />
+      <path d="M 207 176 Q 230 151 253 176 Q 230 190 207 176 Z" fill="url(#glossGrad)" />
+      <path d="M 245 175 Q 270 145 295 175 Q 270 198 245 175 Z" fill="url(#scaleLightGrad)" />
+      <path d="M 247 173 Q 270 148 293 173 Q 270 188 247 173 Z" fill="url(#glossGrad)" />
+      <path d="M 285 170 Q 305 145 325 170 Q 305 190 285 170 Z" fill="url(#scaleMedGrad)" />
+      <path d="M 287 168 Q 305 148 323 168 Q 305 181 287 168 Z" fill="url(#glossGrad)" />
+    </g>
+    <g id="cap-row-2" filter="url(#softShadow)">
+      <path d="M 140 205 Q 165 175 190 205 Q 165 228 140 205 Z" fill="url(#scaleDarkGrad)" />
+      <path d="M 175 212 Q 205 175 235 212 Q 205 238 175 212 Z" fill="url(#scaleMedGrad)" />
+      <path d="M 178 209 Q 205 178 232 209 Q 205 226 178 209 Z" fill="url(#glossGrad)" />
+      <path d="M 220 218 Q 255 180 290 218 Q 255 245 220 218 Z" fill="url(#scaleLightGrad)" />
+      <path d="M 223 215 Q 255 183 287 215 Q 255 233 223 215 Z" fill="url(#glossGrad)" />
+      <path d="M 275 212 Q 305 175 335 212 Q 305 238 275 212 Z" fill="url(#scaleMedGrad)" />
+      <path d="M 278 209 Q 305 178 332 209 Q 305 226 278 209 Z" fill="url(#glossGrad)" />
+      <path d="M 320 200 Q 345 170 370 200 Q 345 223 320 200 Z" fill="url(#scaleDarkGrad)" />
+    </g>
+    <g id="cap-row-1" filter="url(#softShadow)">
+      <path d="M 115 230 Q 145 195 175 230 Q 145 258 115 230 Z" fill="url(#scaleDarkGrad)" />
+      <path d="M 155 245 C 150 200, 200 200, 205 245 C 205 285, 155 285, 155 245 Z" fill="url(#scaleMedGrad)" />
+      <path d="M 158 241 C 153 205, 197 205, 202 241 C 202 271, 158 271, 158 241 Z" fill="url(#glossGrad)" />
+      <path d="M 195 255 C 190 210, 245 210, 250 255 C 250 300, 195 300, 195 255 Z" fill="url(#scaleLightGrad)" />
+      <path d="M 198 251 C 193 215, 242 215, 247 251 C 247 284, 198 284, 198 251 Z" fill="url(#glossGrad)" />
+      <path d="M 240 255 C 235 210, 290 210, 295 255 C 295 300, 240 300, 240 255 Z" fill="url(#scaleLightGrad)" />
+      <path d="M 243 251 C 238 215, 287 215, 292 251 C 292 284, 243 284, 243 251 Z" fill="url(#glossGrad)" />
+      <path d="M 285 245 C 280 200, 330 200, 335 245 C 335 285, 285 285, 285 245 Z" fill="url(#scaleMedGrad)" />
+      <path d="M 288 241 C 283 205, 327 205, 332 241 C 332 271, 288 271, 288 241 Z" fill="url(#glossGrad)" />
+      <path d="M 325 230 Q 355 195 385 230 Q 355 258 325 230 Z" fill="url(#scaleDarkGrad)" />
+    </g>
+  </g>
+</svg>
