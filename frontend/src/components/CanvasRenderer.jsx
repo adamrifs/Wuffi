@@ -11,21 +11,23 @@ export function CanvasRenderer({ imagesRef, frameRef, scrolledRef, idleImagesRef
     const ctx = canvas.getContext("2d", { alpha: false });
     let animationFrameId;
     let lastRenderedFrame = -1;
-    // These are the PHYSICAL pixel dimensions of the canvas buffer
     let bufferWidth = 0;
     let bufferHeight = 0;
 
     // --- Idle animation state ---
-    let idleFrame = 0;                // current frame within the idle loop (float)
-    let idleLastTime = -1;            // -1 means "not yet initialised"
-    let lastValidIdleImg = null;      // fallback: last frame we successfully drew
+    let idleFrame = 0;                
+    let idleLastTime = -1;            
+    let lastValidIdleImg = null;      
     const IDLE_FPS = 30;
 
     // --- Crossfade state ---
-    // When user starts scrolling we crossfade from idle → scroll sequence
-    let crossfadeAlpha = 0;          // 0 = pure idle, 1 = pure scroll
-    let wasScrolled = false;          // tracks previous scroll state to detect re-entry
-    const CROSSFADE_SPEED = 0.03;    // slow and smooth transition (~33 frames = ~0.5 seconds)
+    let crossfadeAlpha = 0;          
+    let wasScrolled = false;          
+    const CROSSFADE_SPEED = 0.03;    
+
+    // --- Scroll fallback state ---
+    let lastValidImg1 = null;
+    let lastValidImg2 = null;
 
     const handleResize = () => {
       const dpr = window.devicePixelRatio || 1;
@@ -35,19 +37,17 @@ export function CanvasRenderer({ imagesRef, frameRef, scrolledRef, idleImagesRef
       bufferHeight = Math.round(cssHeight * dpr);
       canvas.width = bufferWidth;
       canvas.height = bufferHeight;
-      lastRenderedFrame = -1; // force redraw after resize
+      lastRenderedFrame = -1; 
     };
 
     window.addEventListener("resize", handleResize);
     handleResize();
 
-    /**
-     * Draw in COVER mode using the PHYSICAL pixel buffer dimensions.
-     * extraScale is used for the quick zoom transition effect.
-     */
     const drawImageCover = (ctx, img, bw, bh, extraScale = 1.0) => {
+      if (!img) return;
       const iw = img.width;
       const ih = img.height;
+      if (!iw || !ih) return; // In case the image is somehow broken
       const scale = Math.max(bw / iw, bh / ih) * extraScale;
       const drawWidth = iw * scale;
       const drawHeight = ih * scale;
@@ -59,45 +59,48 @@ export function CanvasRenderer({ imagesRef, frameRef, scrolledRef, idleImagesRef
     const OVERLAP_FRAMES = 30;
     const SEQ1_COUNT = 240;
 
+    // Helper to fallback to nearest previous loaded frame if target is missing
+    const getNearestFrame = (seq, index) => {
+      if (seq[index]) return seq[index];
+      // search backwards
+      for (let i = index - 1; i >= 0; i--) {
+         if (seq[i]) return seq[i];
+      }
+      return null;
+    };
+
     const renderLoop = (now) => {
       const sequences = imagesRef.current;
       const hasScrolled = scrolledRef?.current ?? false;
       const hasIdle = idleImagesRef?.current?.[0] != null;
 
-      // --- Update crossfade alpha ---
       if (hasScrolled) {
         crossfadeAlpha = Math.min(1, crossfadeAlpha + CROSSFADE_SPEED);
       } else {
         crossfadeAlpha = Math.max(0, crossfadeAlpha - CROSSFADE_SPEED);
       }
 
-      // --- Advance idle frame at IDLE_FPS ---
       if (hasIdle && crossfadeAlpha < 1) {
-        // Reset the clock if: first time, or re-entering idle from scroll
         if (idleLastTime < 0 || wasScrolled) {
           idleLastTime = now;
         }
-        const elapsed = Math.min(now - idleLastTime, 100); // cap at 100ms to avoid a huge jump after tab is hidden
+        const elapsed = Math.min(now - idleLastTime, 100);
         idleLastTime = now;
-        // Just increment infinitely, we'll use modulo math below to ping-pong
         idleFrame = idleFrame + (elapsed / 1000) * IDLE_FPS;
       }
       wasScrolled = hasScrolled;
 
-      // --- Decide what to draw ---
       const currentFrame = frameRef.current;
       const roundedFrame = Math.round(currentFrame);
       
-      // Ping-pong loop: plays 0 -> 191, then 191 -> 0, creating a mathematically perfect seamless loop
       const L = idleCount - 1;
       const cycle = 2 * L;
       const x = Math.floor(idleFrame) % cycle;
       const roundedIdle = x <= L ? x : cycle - x;
 
-      // Only skip if nothing has changed at all (saves GPU work)
       const needsRedraw =
-        crossfadeAlpha > 0 || // actively crossfading
-        crossfadeAlpha < 1 || // idle is showing
+        crossfadeAlpha > 0 || 
+        crossfadeAlpha < 1 || 
         roundedFrame !== lastRenderedFrame;
 
       if (!needsRedraw) {
@@ -108,13 +111,10 @@ export function CanvasRenderer({ imagesRef, frameRef, scrolledRef, idleImagesRef
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, bufferWidth, bufferHeight);
 
-      // --- Calculate dynamic zoom and blur for the transition effect ---
-      // This creates a mathematical parabolic curve: it is 0 at both ends (alpha 0 and 1), and peaks at 1 in the exact middle (alpha 0.5)
       const transitionPeak = Math.sin(crossfadeAlpha * Math.PI);
-      const currentBlur = transitionPeak * 25; // peaks at 25px blur
-      const currentZoom = 1.0 + (transitionPeak * 0.15); // peaks at 1.15x scale
+      const currentBlur = transitionPeak * 25; 
+      const currentZoom = 1.0 + (transitionPeak * 0.15); 
       
-      // Apply the dynamic blur to the canvas context
       if (currentBlur > 0.1) {
         ctx.filter = `blur(${currentBlur}px)`;
       } else {
@@ -123,11 +123,9 @@ export function CanvasRenderer({ imagesRef, frameRef, scrolledRef, idleImagesRef
 
       // ---- IDLE LAYER ----
       if (hasIdle && crossfadeAlpha < 1) {
-        const idleImg = idleImagesRef.current[0][roundedIdle];
-        // Use the current frame if valid, otherwise fall back to the last good frame
-        // This prevents a single black flash when a frame is undefined at the loop boundary
+        const idleImg = getNearestFrame(idleImagesRef.current[0], roundedIdle);
         const frameToDraw = idleImg || lastValidIdleImg;
-        if (idleImg) lastValidIdleImg = idleImg; // update fallback
+        if (idleImg) lastValidIdleImg = idleImg; 
         if (frameToDraw) {
           ctx.globalAlpha = 1 - crossfadeAlpha;
           drawImageCover(ctx, frameToDraw, bufferWidth, bufferHeight, currentZoom);
@@ -141,42 +139,41 @@ export function CanvasRenderer({ imagesRef, frameRef, scrolledRef, idleImagesRef
         const seq3 = sequences.length > 2 ? sequences[2] : null;
 
         const seq2Start = SEQ1_COUNT - OVERLAP_FRAMES;
-        const seq3Start = seq2Start + seq2.length; // No overlap between seq2 and seq3
+        const seq3Start = seq2Start + seq2.length; 
 
         let img1 = null;
         let img2 = null;
         let alpha2 = 0;
 
         if (currentFrame < seq2Start) {
-          // Pure Sequence 1
-          img1 = seq1[Math.min(seq1.length - 1, roundedFrame)];
+          img1 = getNearestFrame(seq1, Math.min(seq1.length - 1, roundedFrame));
         } else if (currentFrame < SEQ1_COUNT) {
-          // Crossfade Sequence 1 -> Sequence 2
-          img1 = seq1[Math.min(seq1.length - 1, roundedFrame)];
+          img1 = getNearestFrame(seq1, Math.min(seq1.length - 1, roundedFrame));
           const seq2Index = roundedFrame - seq2Start;
-          img2 = seq2[Math.max(0, Math.min(seq2.length - 1, seq2Index))];
+          img2 = getNearestFrame(seq2, Math.max(0, Math.min(seq2.length - 1, seq2Index)));
           alpha2 = (currentFrame - seq2Start) / OVERLAP_FRAMES;
         } else if (!seq3 || currentFrame < seq3Start) {
-          // Pure Sequence 2
           const seq2Index = roundedFrame - seq2Start;
-          img2 = seq2[Math.max(0, Math.min(seq2.length - 1, seq2Index))];
+          img2 = getNearestFrame(seq2, Math.max(0, Math.min(seq2.length - 1, seq2Index)));
           alpha2 = 1;
         } else {
-          // Pure Sequence 3 (Wuffi Forest)
           const seq3Index = roundedFrame - seq3Start;
-          // Continue playing normally
-          img2 = seq3[Math.max(0, Math.min(seq3.length - 1, seq3Index))];
+          img2 = getNearestFrame(seq3, Math.max(0, Math.min(seq3.length - 1, seq3Index)));
           alpha2 = 1;
         }
 
-        if (img1 && alpha2 < 1) {
+        const frameToDraw1 = img1 || lastValidImg1;
+        if (img1) lastValidImg1 = img1;
+        if (frameToDraw1 && alpha2 < 1) {
           ctx.globalAlpha = crossfadeAlpha;
-          drawImageCover(ctx, img1, bufferWidth, bufferHeight, currentZoom);
+          drawImageCover(ctx, frameToDraw1, bufferWidth, bufferHeight, currentZoom);
         }
-        if (img2 && alpha2 > 0) {
-          // Note: don't apply zoom to the sequence crossfade, only the idle crossfade
+
+        const frameToDraw2 = img2 || lastValidImg2;
+        if (img2) lastValidImg2 = img2;
+        if (frameToDraw2 && alpha2 > 0) {
           ctx.globalAlpha = crossfadeAlpha * alpha2;
-          drawImageCover(ctx, img2, bufferWidth, bufferHeight, 1.0);
+          drawImageCover(ctx, frameToDraw2, bufferWidth, bufferHeight, 1.0);
         }
       }
 
@@ -204,7 +201,7 @@ export function CanvasRenderer({ imagesRef, frameRef, scrolledRef, idleImagesRef
         left: 0,
         width: "100vw",
         height: "100vh",
-        transition: "opacity 0s", // Instant handoff to prevent ghosting
+        transition: "opacity 0s",
         pointerEvents: "none",
         zIndex: 0,
       }}

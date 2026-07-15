@@ -15,9 +15,10 @@ export function useImagePreloader(sequences) {
       const totalFramesToLoad = sequences.reduce((sum, seq) => sum + seq.count, 0);
       const allLoadedImages = sequences.map(seq => new Array(seq.count));
 
+      // Make the array immediately available to the renderer
+      imagesRef.current = allLoadedImages;
+
       const loadImage = async (seqIndex, frameIndex) => {
-        // Each sequence can supply its own urlBuilder function.
-        // If not provided, fall back to the original 6-digit, 0-indexed format.
         const seq = sequences[seqIndex];
         const url = seq.urlBuilder
           ? seq.urlBuilder(frameIndex)
@@ -45,31 +46,53 @@ export function useImagePreloader(sequences) {
         loadedCount++;
         if (!isCancelled) {
           setProgress(Math.round((loadedCount / totalFramesToLoad) * 100));
+          
+          // Optimization: Unblock the UI early.
+          // Once we have a reasonable amount of frames loaded (e.g. 15 frames), start the experience.
+          const threshold = Math.min(15, totalFramesToLoad);
+          if (loadedCount >= threshold) {
+            setIsLoaded(true);
+          }
         }
       };
 
-      const concurrency = 10;
-      let activePromises = [];
+      // To optimize rendering, load frame 0-4 of every sequence first
+      // so that if the user scrolls quickly, the beginning of sequences are ready.
+      const priorityQueue = [];
+      const backgroundQueue = [];
 
       for (let seqIndex = 0; seqIndex < sequences.length; seqIndex++) {
         for (let frameIndex = 0; frameIndex < sequences[seqIndex].count; frameIndex++) {
+          if (frameIndex < 5) {
+            priorityQueue.push({ seqIndex, frameIndex });
+          } else {
+            backgroundQueue.push({ seqIndex, frameIndex });
+          }
+        }
+      }
+
+      const processQueue = async (queue, concurrency) => {
+        let activePromises = [];
+        for (const { seqIndex, frameIndex } of queue) {
           if (isCancelled) break;
-          
           activePromises.push(loadImage(seqIndex, frameIndex));
-          
           if (activePromises.length >= concurrency) {
             await Promise.all(activePromises);
             activePromises = [];
           }
         }
-      }
+        if (activePromises.length > 0) {
+          await Promise.all(activePromises);
+        }
+      };
+
+      // Load priority queue first
+      await processQueue(priorityQueue, 10);
       
-      if (activePromises.length > 0) {
-         await Promise.all(activePromises);
-      }
+      // Then load the rest in the background with higher concurrency to fetch faster
+      await processQueue(backgroundQueue, 20);
 
       if (!isCancelled) {
-        imagesRef.current = allLoadedImages;
         setIsLoaded(true);
       }
     };
